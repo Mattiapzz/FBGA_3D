@@ -1,3 +1,25 @@
+/*
+(***********************************************************************************)
+(*                                                                                 *)
+(* The FBGA3D project                                                              *)
+(*                                                                                 *)
+(* Copyright (c) 2025, Mattia Piazza                                               *)
+(*                                                                                 *)
+(* The FBGA3D project and its components are supplied under the terms              *)
+(* of the open source BSD 2-Clause License. The contents of the FBGA3D             *)
+(* project and its components may not be copied or disclosed except in             *)
+(* accordance with the terms of the BSD 2-Clause License.                          *)
+(*                                                                                 *)
+(* URL: https://opensource.org/licenses/BSD-2-Clause                               *)
+(*                                                                                 *)
+(*    Mattia Piazza                                                                *)
+(*    Department of Industrial Engineering                                         *)
+(*    University of Trento                                                         *)
+(*    e-mail: mattia.piazza@unitn.it                                               *)
+(*                                                                                 *)
+(***********************************************************************************)
+*/
+
 #pragma once
 #ifndef INCLUDE_RERUN_UTILS
 #define INCLUDE_RERUN_UTILS

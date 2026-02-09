@@ -3,8 +3,8 @@
 #  file: CMakeLists.txt                                                    #
 #  Copyright (C) 2025                                                      #
 #      Mattia Piazza                                                       #
-#      Dipartimento di Ingegneria Industriale                              #
-#      Universita` degli Studi di Trento                                   #
+#      Department of Industrial Engineerig.                                #
+#      University of Trento                                                #
 #      email: mattia.piazza@unitn.it                                       #
 #                                                                          #
 ############################################################################
