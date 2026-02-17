@@ -84,22 +84,4 @@ fi
 
 cd "$ROOT_SCRIPT_DIR/third_party"
 
-# rerun
-if [ ! -d "rerun_cpp_sdk" ]; then
-  echo "${YELLOW}Downloading rerun${NORMAL}"
-  curl -L https://github.com/rerun-io/rerun/releases/download/0.21.0/rerun_cpp_sdk.zip --output rerun_cpp_sdk.zip
-  unzip rerun_cpp_sdk.zip
-  rm rerun_cpp_sdk.zip
-  cd rerun_cpp_sdk
-  mkdir build
-  cd build
-  cmake -DCMAKE_INSTALL_PREFIX=../ ..
-  make -j
-  make install
-  cd ../..
-else
-  echo "${YELLOW}rerun already installed${NORMAL}"
-fi
-
-cd "$ROOT_SCRIPT_DIR/third_party"
 

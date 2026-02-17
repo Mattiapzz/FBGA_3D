@@ -24,8 +24,6 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <rerun/archetypes/points3d.hpp>
-#include <rerun/archetypes/scalar.hpp>
 #include <thread>
 #include <vector>
 
@@ -33,7 +31,6 @@
 #include "FBGA3D/gg_utils.hxx"
 #include "FBGA3D/types.hxx"
 
-#include "rerun_utils.hh"
 
 // rapidcsv
 #include "rapidcsv.h"
@@ -77,7 +74,6 @@ int main(int argc, char *argv[])
   cxxopts::Options options("GIGI");
   options.add_options()
     ("h,help", "Print help")
-    ("r,rerun", "Circuit name", cxxopts::value<bool>()->default_value("false"))
     ("c,circuit", "Circuit name", cxxopts::value<std::string>()->default_value("Yas_Marina_raceline.csv"))
     ("f,folder", "Folder path of the circuit data", cxxopts::value<std::string>()->default_value("./data/INDY/"))
     ("y,yellow", "Yellow flag active", cxxopts::value<bool>()->default_value("false"))
@@ -95,7 +91,6 @@ int main(int argc, char *argv[])
     exit(0);
   }
 
-  const bool rerun_active = result["rerun"].as<bool>();
   const bool yellow_flag_active = result["yellow"].as<bool>();
   const bool is_2d = result["dimension"].as<bool>();
   const std::string circuit_name = result["circuit"].as<std::string>();
@@ -118,7 +113,6 @@ int main(int argc, char *argv[])
   std::cout << "Yellow flag active: " << (yellow_flag_active ? "Yes" : "No") << "\n";
   std::cout << "Target Speed yellow flag: " << v_des_yf << " m/s\n";
   std::cout << "Target acceleration yellow flag: " << a_des_yf << " m/s²\n";
-  std::cout << "Rerun active: " << (rerun_active ? "Yes" : "No") << "\n";
   std::cout << "Output write: " << (output_write ? "Yes" : "No") << "\n";
   std::cout << "Note: " << note << "\n";
 
@@ -141,33 +135,17 @@ int main(int argc, char *argv[])
     rapidcsv::LineReaderParams(true, '#')); // Skip only comment lines starting with '#'
   // get column names from csv file
   std::vector<std::string> column_names = {
-    "x_rl_m", 
-    "y_rl_m", 
-    "z_rl_m", 
-    "v_rl_mps", 
     "n_rl_m", 
     "chi_rl_rad", 
-    "ax_rl_mps2", 
-    "ay_rl_mps2", 
-    "jx_rl_mps3", 
-    "jy_rl_mps3", 
-    "tire_util_rl", 
     "s_ref_rl_m", 
-    "x_ref_rl_m", 
-    "y_ref_rl_m" , 
-    "z_ref_rl_m", 
     "theta_ref_rl_rad", 
     "mu_ref_rl_rad", 
     "phi_ref_rl_rad", 
     "dtheta_ref_rl_radpm", 
     "dmu_ref_rl_radpm", 
-    "dphi_ref_rl_radpm", 
-    "w_tr_right_ref_rl_m", 
-    "w_tr_left_ref_rl_m", 
-    "omega_x_ref_rl_radpm", 
-    "omega_y_ref_rl_radpm", 
-    "omega_z_ref_rl_radpm"
+    "dphi_ref_rl_radpm"
   };
+
   //
   std::vector<std::vector<GG::real>> YVEC_SPLNE;
   YVEC_SPLNE.reserve(column_names.size());
@@ -251,7 +229,7 @@ int main(int argc, char *argv[])
       {ALPHAS} // Adherence coefficients
     };
   //
-  GG::real v_initial = traj_spline.eval("v_rl_mps", 0.0);
+  GG::real v_initial = 20.0;
   GG::yellow_flag_data yellow_flag_data{v_des_yf, a_des_yf, yellow_flag_active};
 
   //  
@@ -300,20 +278,21 @@ int main(int argc, char *argv[])
 
       output_file << "# Solution data:\n";
 
-      output_file << "x_rl_m,y_rl_m,z_rl_m,v_rl_mps,n_rl_m,chi_rl_rad,ax_rl_mps2,ay_rl_mps2,s_ref_rl_m,x_ref_rl_m,y_ref_rl_m,z_ref_rl_m," << "alpha_lu,s_lu_m,v_lu_mps,axhat_lu_mps2,ayhat_lu_mps2,azhat_lu_mps2,axtilde_lu_mps2,aytilde_lu_mps2,aztilde_lu_mps2,v_dot_lu_mps2,v_max_lu_mps\n";
+      output_file << "theta_ref_rl_rad, mu_ref_rl_rad, phi_ref_rl_rad, dtheta_ref_rl_radpm, dmu_ref_rl_radpm, dphi_ref_rl_radpm,"
+      << "alpha_lu,s_fb_m,v_fb_mps,axhat_fb_mps2,ayhat_fb_mps2,azhat_fb_mps2,axtilde_fb_mps2,aytilde_fb_mps2,aztilde_fb_mps2,v_dot_fb_mps2,v_max_fb_mps,g_x_fb_mps2,g_y_fb_mps2,g_z_fb_mps2,Omega_x_fb_radpm,Omega_y_fb_radpm,Omega_z_fb_radpm\n";
+
+      output_file << std::fixed << std::setprecision(12);
       for (GG::integer i = 0; i < numpts_gg; ++i) {
-        output_file << traj_spline.eval("x_rl_m", S_gg[i]) << ","
-        << traj_spline.eval("y_rl_m", S_gg[i]) << ","
-        << traj_spline.eval("z_rl_m", S_gg[i]) << ","
-        << traj_spline.eval("v_rl_mps", S_gg[i]) << ","
+        output_file 
         << traj_spline.eval("n_rl_m", S_gg[i]) << ","
         << traj_spline.eval("chi_rl_rad", S_gg[i]) << ","
-        << traj_spline.eval("ax_rl_mps2", S_gg[i]) << ","
-        << traj_spline.eval("ay_rl_mps2", S_gg[i]) << ","
         << traj_spline.eval("s_ref_rl_m", S_gg[i]) << ","
-        << traj_spline.eval("x_ref_rl_m", S_gg[i]) << ","
-        << traj_spline.eval("y_ref_rl_m", S_gg[i]) << ","
-        << traj_spline.eval("z_ref_rl_m", S_gg[i]) << ","
+        << traj_spline.eval("theta_ref_rl_rad", S_gg[i]) << ","
+        << traj_spline.eval("mu_ref_rl_rad", S_gg[i]) << ","
+        << traj_spline.eval("phi_ref_rl_rad", S_gg[i]) << ","
+        << traj_spline.eval("dtheta_ref_rl_radpm", S_gg[i]) << ","
+        << traj_spline.eval("dmu_ref_rl_radpm", S_gg[i]) << ","
+        << traj_spline.eval("dphi_ref_rl_radpm", S_gg[i]) << ","
         << fbga_moto.eval_alpha(S_gg[i]) << ","
         << S_gg[i] << ","
         << fbga_moto.eval_V(S_gg[i]) << ","
@@ -324,249 +303,17 @@ int main(int argc, char *argv[])
         << fbga_moto.eval_A_tilde_y(S_gg[i]) << ","
         << fbga_moto.eval_A_tilde_z(S_gg[i]) << ","
         << fbga_moto.eval_V_dot(S_gg[i]) << ","
-        << fbga_moto.eval_Vmax(S_gg[i]) << "\n";
+        << fbga_moto.eval_Vmax(S_gg[i]) << ","
+        << fbga_moto.eval_g_x(S_gg[i]) << ","
+        << fbga_moto.eval_g_y(S_gg[i]) << ","
+        << fbga_moto.eval_g_z(S_gg[i]) << ","
+        << fbga_moto.eval_Omega_x(S_gg[i]) << ","
+        << fbga_moto.eval_Omega_y(S_gg[i]) << ","
+        << fbga_moto.eval_Omega_z(S_gg[i]) << "\n";
       }
     }
     output_file.close();
   }
-
-  //
-  // ██████╗ ███████╗██████╗ ██╗   ██╗███╗   ██╗
-  // ██╔══██╗██╔════╝██╔══██╗██║   ██║████╗  ██║
-  // ██████╔╝█████╗  ██████╔╝██║   ██║██╔██╗ ██║
-  // ██╔══██╗██╔══╝  ██╔══██╗██║   ██║██║╚██╗██║
-  // ██║  ██║███████╗██║  ██║╚██████╔╝██║ ╚████║
-  // ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═══╝
-  //
-  if (rerun_active)
-  {
-
-#define RERUN_DISPLAY 1
-#if RERUN_DISPLAY
-  std::string tcp_port = "127.0.0.1:9876";
-// Initialize the rerun logger
-#if RERUN_LOGGING < RERUN_OFF
-  {
-    rerun::RecordingStream recording{"FBGA", "FBGA"};
-    recording.set_global();
-  }
-  rerun::RecordingStream &recording = rerun::RecordingStream::current();
-  rerun::Error err = recording.connect_tcp(tcp_port, 10.0);
-  err.throw_on_failure();
-#endif
-  // sleep 1s
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-  //
-  GG::integer numpoints = ceil(total_L);
-  //
-  std::vector<rerun::datatypes::Vec3D> points;
-  for (GG::integer i = 0; i < numpoints; ++i) {
-    GG::real ss = (GG::real) i * (total_L / (GG::real) (numpoints - 1));
-    // Log the position of the trajectory
-    points.emplace_back((GG::floating) traj_spline.eval("x_rl_m", ss),
-                        (GG::floating) traj_spline.eval("y_rl_m", ss),
-                        (GG::floating) traj_spline.eval("z_rl_m", ss));
-  }
-  //
-  rerun::components::LineStrip3D line_strip(points);
-  recording.log_static(
-      "FBGA/track",
-      rerun::LineStrips3D(line_strip)
-          .with_colors(rerun::Color(colours["green"].r, colours["green"].g,
-                                    colours["green"].b))
-          .with_radii(rerun::Radius::scene_units(0.5)));
-  //
-  std::vector<rerun::Position3D> points_enve_up;
-  std::vector<rerun::Position3D> points_enve_dw;
-  points_enve_up.reserve(static_cast<std::size_t>(NUMPTSPLOTSHELL) * static_cast<std::size_t>(NUMPTSPLOTSHELL));
-  points_enve_dw.reserve(static_cast<std::size_t>(NUMPTSPLOTSHELL) * static_cast<std::size_t>(NUMPTSPLOTSHELL));
-  GG::NodeStruct3D fictitious_node;
-  fictitious_node.s           = 0.0;
-  fictitious_node.mu          = 0.0;
-  fictitious_node.phi         = 0.0;
-  fictitious_node.theta       = 0.0;
-  fictitious_node.mu_prime    = 0.0;
-  fictitious_node.phi_prime   = 0.0;
-  fictitious_node.theta_prime = 0.0;
-  fictitious_node.n           = 0.0;
-  fictitious_node.chi         = 0.0;
-  fbga_moto.eval_Omega_xyz_plot(fictitious_node);
-  fbga_moto.eval_g_xyz_plot(fictitious_node);
-
-  GG::output_plot_ggv_shell static_plot_shell = fbga_moto.eval_shell_plot( fictitious_node, 10.0,80.0,0.0);
-
-  for(GG::size_type index = 0; index < static_plot_shell.v.size(); ++index) {
-    points_enve_dw.emplace_back((GG::floating) static_plot_shell.a_tilde_y[index],
-         (GG::floating) static_plot_shell.v[index],
-         (GG::floating) static_plot_shell.a_tilde_x_min[index]);
-    points_enve_up.emplace_back((GG::floating) static_plot_shell.a_tilde_y[index],
-         (GG::floating) static_plot_shell.v[index],
-         (GG::floating) static_plot_shell.a_tilde_x_max[index]);
-  }
-
-  recording.log_static(
-      "FBGA/envelope/upper",
-      rerun::Points3D(points_enve_up)
-          .with_colors(rerun::Color(colours["red"].r, colours["red"].g,
-                                    colours["red"].b)));
-  recording.log_static(
-      "FBGA/envelope/lower",
-      rerun::Points3D(points_enve_dw)
-          .with_colors(rerun::Color(colours["blue"].r, colours["blue"].g,
-                                    colours["blue"].b)));
-  //
-  std::vector<rerun::Position3D> points_ggv_path;
-  //
-  points_ggv_path.reserve(static_cast<std::size_t>(numpts_gg));
-  // 
-  const GG::integer numpts_gg_plot = ceil(total_L*3.0);
-  GG::real ds_plot = total_L / (GG::real) (numpts_gg_plot - 1);
-  for (GG::integer i = 0; i < numpts_gg_plot; ++i) {
-    GG::real space = (GG::real) i * ds_plot;
-    //
-    recording.set_time_seconds("space", space);
-    //
-    auto x_val = traj_spline.eval("x_rl_m", space);
-    auto y_val = traj_spline.eval("y_rl_m", space);
-    auto z_val = traj_spline.eval("z_rl_m", space);
-    //
-    auto vel_max_val = fbga_moto.eval_Vmax(space);
-    auto Omega_x_val = fbga_moto.eval_Omega_x(space);
-    auto Omega_y_val = fbga_moto.eval_Omega_y(space);
-    auto Omega_z_val = fbga_moto.eval_Omega_z(space);
-    //
-    auto theta_spline_val = traj_spline.eval("theta_ref_rl_rad", space);
-    auto phi_spline_val = traj_spline.eval("phi_ref_rl_rad", space);
-    auto mu_spline_val = traj_spline.eval("mu_ref_rl_rad", space);
-    auto dtheta_spline_val = traj_spline.eval("dtheta_ref_rl_radpm", space);
-    auto dphi_spline_val = traj_spline.eval("dphi_ref_rl_radpm", space);
-    auto dmu_spline_val = traj_spline.eval("dmu_ref_rl_radpm", space);
-    auto chi_spline_val = traj_spline.eval("chi_rl_rad", space);
-    auto n_spline_val = traj_spline.eval("n_rl_m", space);
-    //
-    auto segment_type_val = fbga_moto.eval_segment_type(space);
-    //
-    auto v_val = fbga_moto.eval_V(space);
-    auto a_hat_x_val = fbga_moto.eval_A_hat_x(space);
-    auto a_hat_y_val = fbga_moto.eval_A_hat_y(space);
-    auto a_hat_z_val = fbga_moto.eval_A_hat_z(space);
-    //
-    auto a_tilde_x_val = fbga_moto.eval_A_tilde_x(space);
-    auto a_tilde_y_val = fbga_moto.eval_A_tilde_y(space);
-    auto a_tilde_z_val = fbga_moto.eval_A_tilde_z(space);
-    //
-    auto v_dot_val = fbga_moto.eval_V_dot(space);
-    //
-    auto v_mpc_val = traj_spline.eval("v_rl_mps", space);
-    //
-    auto a_x_mpc_val = traj_spline.eval("ax_rl_mps2", space);
-    auto a_y_mpc_val = traj_spline.eval("ay_rl_mps2", space);
-    //
-    auto alpha_val = fbga_moto.eval_alpha(space);
-    // Log values
-    recording.log("x", rerun::Scalar{x_val});
-    recording.log("y", rerun::Scalar{y_val});
-    recording.log("z", rerun::Scalar{z_val});
-    //
-    recording.log("vel_max", rerun::Scalar{vel_max_val});
-    recording.log("Omega_x", rerun::Scalar{Omega_x_val});
-    recording.log("Omega_y", rerun::Scalar{Omega_y_val});
-    recording.log("Omega_z", rerun::Scalar{Omega_z_val});
-    //
-    recording.log("theta_spline", rerun::Scalar{theta_spline_val});
-    recording.log("phi_spline", rerun::Scalar{phi_spline_val});
-    recording.log("mu_spline", rerun::Scalar{mu_spline_val});
-    recording.log("dtheta_spline", rerun::Scalar{dtheta_spline_val});
-    recording.log("dphi_spline", rerun::Scalar{dphi_spline_val});
-    recording.log("dmu_spline", rerun::Scalar{dmu_spline_val});
-    recording.log("chi_spline", rerun::Scalar{chi_spline_val});
-    recording.log("n_spline", rerun::Scalar{n_spline_val});
-    //
-    recording.log("v", rerun::Scalar{v_val});
-    recording.log("a_hat_x", rerun::Scalar{a_hat_x_val});
-    recording.log("a_hat_y", rerun::Scalar{a_hat_y_val});
-    recording.log("a_hat_z", rerun::Scalar{a_hat_z_val});
-    //
-    recording.log("a_tilde_x", rerun::Scalar{a_tilde_x_val});
-    recording.log("a_tilde_y", rerun::Scalar{a_tilde_y_val});
-    recording.log("a_tilde_z", rerun::Scalar{a_tilde_z_val});
-    //
-    recording.log("v_dot", rerun::Scalar{v_dot_val});
-    //
-    recording.log("segment_type", rerun::Scalar{static_cast<int>(segment_type_val)});
-    //
-    recording.log("v_mpc", rerun::Scalar{v_mpc_val});
-    recording.log("a_x_mpc", rerun::Scalar{a_x_mpc_val});
-    recording.log("a_y_mpc", rerun::Scalar{a_y_mpc_val});
-    //
-    recording.log("alpha", rerun::Scalar{alpha_val});
-    //
-    // Only execute every 5 iterations to reduce computation and logging
-    if (i % 1 == 0) {
-      fictitious_node.s           = space;
-      fictitious_node.mu          = mu_spline_val;
-      fictitious_node.phi         = phi_spline_val;
-      fictitious_node.theta       = theta_spline_val;
-      fictitious_node.mu_prime    = dmu_spline_val;
-      fictitious_node.phi_prime   = dphi_spline_val;
-      fictitious_node.theta_prime = dtheta_spline_val;
-      fictitious_node.n           = n_spline_val;
-      fictitious_node.chi         = chi_spline_val;
-      fictitious_node.alpha       = alpha_val;
-      fbga_moto.eval_Omega_xyz_plot(fictitious_node);
-      fbga_moto.eval_g_xyz_plot(fictitious_node);
-      //
-      GG::output_plot_ggv_shell dynamic_plot_shell = fbga_moto.eval_shell_plot( fictitious_node, 10.0,80.0,0.0);
-      //
-      points_enve_dw.clear();
-      points_enve_up.clear();
-      points_enve_dw.reserve(static_cast<std::size_t>(NUMPTSPLOTSHELL) * static_cast<std::size_t>(NUMPTSPLOTSHELL));
-      points_enve_up.reserve(static_cast<std::size_t>(NUMPTSPLOTSHELL) * static_cast<std::size_t>(NUMPTSPLOTSHELL));
-      for(GG::size_type index = 0; index < dynamic_plot_shell.v.size(); ++index) {
-      points_enve_dw.emplace_back((GG::floating) dynamic_plot_shell.a_tilde_y[index],
-        (GG::floating) dynamic_plot_shell.v[index],
-        (GG::floating) dynamic_plot_shell.a_tilde_x_min[index]);
-      points_enve_up.emplace_back((GG::floating) dynamic_plot_shell.a_tilde_y[index],
-        (GG::floating) dynamic_plot_shell.v[index],
-        (GG::floating) dynamic_plot_shell.a_tilde_x_max[index]);
-      }
-      //
-      recording.log(
-        "FBGA/envelope/upper_moving",
-        rerun::Points3D(points_enve_up)
-        .with_colors(rerun::Color(colours["mint"].r, colours["mint"].g, colours["mint"].b)));
-      recording.log(
-        "FBGA/envelope/lower_moving",
-        rerun::Points3D(points_enve_dw)
-          .with_colors(rerun::Color(colours["mint"].r, colours["mint"].g, colours["mint"].b)));
-    }
-    //
-    recording.log(
-      "FBGA/GGv_point",
-      rerun::Points3D( rerun::Position3D( (GG::floating)a_tilde_y_val, (GG::floating)v_val, (GG::floating)a_tilde_x_val) )
-          .with_colors(rerun::Color(colours["cyan"].r, colours["cyan"].g,colours["cyan"].b))
-          .with_radii(0.5f));
-    //
-    recording.log(
-      "FBGA/Traj_point",
-      rerun::Points3D( rerun::Position3D( (GG::floating)x_val, (GG::floating)y_val, (GG::floating)z_val) )
-          .with_colors(rerun::Color(colours["cyan"].r, colours["cyan"].g,colours["cyan"].b))
-          .with_radii(3.5f));
-    //
-    points_ggv_path.emplace_back((GG::floating)a_tilde_y_val, (GG::floating)v_val, (GG::floating)a_tilde_x_val);
-  }
-  //
-  recording.log_static(
-      "FBGA/GGv_path",
-      rerun::Points3D(points_ggv_path)
-          .with_colors(rerun::Color(colours["green"].r, colours["green"].g,
-                                    colours["green"].b)));
-  //
-  std::this_thread::sleep_for(std::chrono::seconds(1));
-#endif
-  //
-
-  } // end rerun_active
 
 
   return 0;

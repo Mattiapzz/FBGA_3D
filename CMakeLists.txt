@@ -96,10 +96,6 @@ target_include_directories(
 
 
 
-##
-# Find rerun_sdk
-set(rerun_sdk_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/rerun_cpp_sdk/lib/cmake/rerun_sdk/)
-find_package(rerun_sdk CONFIG REQUIRED)
 
 #   _____                  _
 #  |_   _|_ _ _ _ __ _ ___| |_ ___
@@ -110,7 +106,7 @@ find_package(rerun_sdk CONFIG REQUIRED)
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES} ${PUBLIC_HEADERS})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC  rerun_sdk thirdparty ${LIBZMQ_LIBRARY})
+target_link_libraries(${PROJECT_NAME} PUBLIC thirdparty ${LIBZMQ_LIBRARY})
 target_include_directories(${PROJECT_NAME} PUBLIC ${SOURCE_DIR} )
 # add_compile_definitions(${PROJECT_NAME} PRIVATE ZMQ_STATIC)
 
@@ -148,7 +144,7 @@ add_custom_target( "${PROJECT_NAME}_all_tests" ALL )
 set( EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_SOURCE_DIR}/bin )
 foreach( S ${EXELISTCPP} )
   add_executable( ${S} ${CMAKE_CURRENT_SOURCE_DIR}/src_tests/${S}.cc )
-  target_link_libraries( ${S} ${LIBS} rerun_sdk thirdparty )
+  target_link_libraries( ${S} ${LIBS} thirdparty )
   set_target_properties( ${S} PROPERTIES SUFFIX ".exe" )
   add_test( NAME "${S}" COMMAND ./bin/${S}.exe WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_dependencies( "${PROJECT_NAME}_all_tests" ${S} )
